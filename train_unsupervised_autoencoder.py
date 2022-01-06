@@ -78,7 +78,7 @@ plt.title("Training Loss")
 plt.xlabel("Epoch #")
 plt.ylabel("Loss")
 plt.legend(loc="lower left")
-plt.savefig("%s_plot.png" % args["kind"])
+plt.savefig("%s_plot_%d.png" % (args["kind"], used_seed))
 
 # serialize the image data to disk
 print("[INFO] saving image data...")

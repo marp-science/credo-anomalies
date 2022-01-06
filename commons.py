@@ -38,10 +38,10 @@ def set_global_determinism(seed=SEED, fast_n_close=False):
     # patch()
 
 
-def do_augmentation(trainX, seed=42):
+def do_augmentation(trainX):
     data_augmentation = tf.keras.Sequential([
-        layers.RandomFlip("horizontal_and_vertical", seed=seed),
-        layers.RandomRotation(0.2, seed=seed),
+        layers.RandomFlip("horizontal_and_vertical"),
+        layers.RandomRotation(0.2),
     ])
 
     arr = []
@@ -53,7 +53,7 @@ def do_augmentation(trainX, seed=42):
     return np.vstack([arr])
 
 
-def build_unsupervised_dataset(data, labels, seed=42, kind='mnist'):
+def build_unsupervised_dataset(data, labels, kind='mnist'):
     # grab all indexes of the supplied class label that are *truly*
     # that particular label, then grab the indexes of the image
     # labels that will serve as our "anomalies"
@@ -70,7 +70,6 @@ def build_unsupervised_dataset(data, labels, seed=42, kind='mnist'):
         raise Exception('Bad kind')
 
     # randomly shuffle both sets of indexes
-    rn.seed(seed)
     rn.shuffle(validIdxs)
     rn.shuffle(anomalyIdxs)
 
@@ -87,7 +86,6 @@ def build_unsupervised_dataset(data, labels, seed=42, kind='mnist'):
     # single data matrix and then shuffle the rows
     images = np.vstack([validImages, anomalyImages])
     # images = np.vstack([validImages])
-    np.random.seed(seed)
     np.random.shuffle(images)
 
     # return the set of images
@@ -159,12 +157,12 @@ def prepare_dataset(args, augmentation=False):
     anomalies = anomalies.astype("float32") / 255.0
 
     # construct the training and testing split
-    (trainX, testOutX) = train_test_split(images, test_size=0.2, random_state=42)
+    (trainX, testOutX) = train_test_split(images, test_size=0.2)
 
     if augmentation:
         trainX = do_augmentation(trainX)
 
-    (trainX, testX) = train_test_split(trainX, test_size=0.2, random_state=42)
+    (trainX, testX) = train_test_split(trainX, test_size=0.2)
 
     # prepare test set
     max_test = min(anomalies.shape[0], testOutX.shape[0])
