@@ -6,10 +6,26 @@ from imageio import imread
 import numpy as np
 
 
+def do_binarize(image):
+    img = image.astype('int32')
+    blackwhite = (img[:, :, 0] + img[:, :, 1] + img[:, :, 2]) / 3.0
+
+    threshold = blackwhite.mean() + blackwhite.std() * 5
+    threshold = threshold if threshold < 100 else 100
+    mask = np.where(blackwhite > threshold, 1, 0)
+    blackwhite = blackwhite * mask
+    return blackwhite
+
+
 def load_images(src):
     images = []
-    for image_path in glob.glob("%s/*.png" % src):
-        image = np.asarray(Image.open(image_path).convert('L'))
+    files = list(glob.glob("%s/*.png" % src))
+    files = sorted(files)
+    for image_path in files:
+        print(image_path)
+        #image = np.asarray(Image.open(image_path).convert('L'))
+        image = np.asarray(Image.open(image_path))
+        image = do_binarize(image)
         images.append(image)
     return np.asarray(images)
 

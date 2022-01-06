@@ -1,5 +1,6 @@
 # import the necessary packages
 import math
+from functools import reduce
 
 from tensorflow.keras.models import load_model
 import numpy as np
@@ -33,6 +34,36 @@ for (image, recon) in zip(images, decoded):
 	errors.append(mse)
 errors_sorted = np.argsort(errors)[::-1]
 
+es = sorted(errors)
+
+# false-positive/ false-negative
+all_checks = int(len(images) / 2)
+
+as_anomaly_classified = errors_sorted[:all_checks]
+as_noanomaly_classified = errors_sorted[all_checks:]
+
+# TODO: odległość Hamminga (różne metody zrobienia 1D z 2D)
+# TODO: informacja wzajemna
+
+
+def is_anomaly(v):
+	if v < all_checks:
+		return 1
+	else:
+		return 0
+
+
+def not_anomaly(v):
+	if v >= all_checks:
+		return 1
+	else:
+		return 0
+
+
+false_positive = reduce(lambda a, b: a + not_anomaly(b), as_anomaly_classified, 0)
+false_negative = reduce(lambda a, b: a + is_anomaly(b), as_noanomaly_classified, 0)
+false_positive_pc = false_positive / all_checks * 100
+false_negative_pc = false_negative / all_checks * 100
 
 # compute the q-th quantile of the errors which serves as our
 # threshold to identify anomalies -- any data point that our model
