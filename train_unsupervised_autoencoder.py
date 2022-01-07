@@ -5,6 +5,7 @@ import matplotlib
 from PIL import Image
 from PIL import ImageDraw
 
+from tensorflow.keras.models import load_model
 from pyimagesearch.convautoencoder import ConvAutoencoder
 from tensorflow.keras.optimizers import Adam
 import matplotlib.pyplot as plt
@@ -40,19 +41,32 @@ trainX, testX, testOutX = prepare_dataset(args, augmentation=True)
 
 # construct our convolutional autoencoder
 print("[INFO] building autoencoder...")
-(encoder, decoder, autoencoder) = ConvAutoencoder.build(28, 28, 1) if args['kind'] == 'mnist' else ConvAutoencoder.build(60, 60, 1)
-opt = Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
-autoencoder.compile(loss="mse", optimizer=opt)
+if USE_MODEL:
+	autoencoder = load_model(args["model"])
+else:
+	(encoder, decoder, autoencoder) = ConvAutoencoder.build(28, 28, 1) if args['kind'] == 'mnist' else ConvAutoencoder.build(60, 60, 1)
+	opt = Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
+	autoencoder.compile(loss="mse", optimizer=opt)
 
+	# train the convolutional autoencoder
+	H = autoencoder.fit(
+		trainX, trainX,
+		shuffle=False,
+		validation_data=(testX, testX),
+		epochs=EPOCHS,
+		batch_size=BS)
 
-
-# train the convolutional autoencoder
-H = autoencoder.fit(
-	trainX, trainX,
-	shuffle=False,
-	validation_data=(testX, testX),
-	epochs=EPOCHS,
-	batch_size=BS)
+	# construct a plot that plots and saves the training history
+	N = np.arange(0, EPOCHS)
+	plt.style.use("ggplot")
+	plt.figure()
+	plt.plot(N, H.history["loss"], label="train_loss")
+	plt.plot(N, H.history["val_loss"], label="val_loss")
+	plt.title("Training Loss")
+	plt.xlabel("Epoch #")
+	plt.ylabel("Loss")
+	plt.legend(loc="lower left")
+	plt.savefig("%s_plot_%d.png" % (args["kind"], used_seed))
 
 # use the convolutional autoencoder to make predictions on the
 # testing images, construct the visualization, and then save it
@@ -73,19 +87,6 @@ decoded = autoencoder.predict(testOutX)
 vis = visualize_predictions(decoded, testOutX)
 cv2.imwrite("%s_vis_test_%d.png" % (args["kind"], used_seed), vis)
 
-
-# construct a plot that plots and saves the training history
-N = np.arange(0, EPOCHS)
-plt.style.use("ggplot")
-plt.figure()
-plt.plot(N, H.history["loss"], label="train_loss")
-plt.plot(N, H.history["val_loss"], label="val_loss")
-plt.title("Training Loss")
-plt.xlabel("Epoch #")
-plt.ylabel("Loss")
-plt.legend(loc="lower left")
-plt.savefig("%s_plot_%d.png" % (args["kind"], used_seed))
-
 # serialize the image data to disk
 #print("[INFO] saving image data...")
 #f = open(args["dataset"], "wb")
@@ -94,4 +95,5 @@ plt.savefig("%s_plot_%d.png" % (args["kind"], used_seed))
 
 # serialize the autoencoder model to disk
 #print("[INFO] saving autoencoder...")
-#autoencoder.save(args["model"], save_format="h5")
+if not USE_MODEL:
+	autoencoder.save(args["model"], save_format="h5")
