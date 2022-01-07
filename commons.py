@@ -5,6 +5,8 @@ import tensorflow as tf
 from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split
 import numpy as np
+from PIL import Image
+from PIL import ImageDraw
 
 from settings import *
 
@@ -34,8 +36,21 @@ def set_global_determinism(seed=SEED, fast_n_close=False):
     tf.config.threading.set_intra_op_parallelism_threads(1)
 
     # # Not working with tf v2.7 but in v2.7 it not necessary
-    # from tfdeterminism import patch
-    # patch()
+    from tfdeterminism import patch
+    #patch()
+    from tensorflow.python.ops import nn
+    from tensorflow.python.ops import nn_ops
+    from tfdeterminism.patch import _new_bias_add_1_14
+    tf.nn.bias_add = _new_bias_add_1_14  # access via public API
+    nn.bias_add = _new_bias_add_1_14  # called from tf.keras.layers.convolutional.Conv
+    nn_ops.bias_add = _new_bias_add_1_14  # called from tests
+
+
+def draw_text(text):
+    img = Image.new("L", (120, 12), 0)
+    draw = ImageDraw.Draw(img)
+    draw.text((0, 0), text, 255)
+    return np.array(img)
 
 
 def do_augmentation(trainX):
@@ -92,10 +107,19 @@ def build_unsupervised_dataset(data, labels, kind='mnist'):
     return np.vstack([validImages]), np.vstack([anomalyImages])
 
 
-def visualize_predictions(decoded, gt):
+def visualize_predictions(decoded, images):
     # initialize our list of output images
+    gt = images
     outputs2 = None
     samples = math.ceil(math.sqrt(gt.shape[0]))
+
+    errors = []
+    for (image, recon) in zip(images, decoded):
+        # compute the mean squared error between the ground-truth image
+        # and the reconstructed image, then add it to our list of errors
+        mse = np.mean((image - recon) ** 2)
+        errors.append(mse)
+    errors_sorted = np.argsort(errors)[::-1]
 
     # loop over our number of output samples
     for y in range(0, samples):
@@ -107,11 +131,15 @@ def visualize_predictions(decoded, gt):
                 recon = original
             else:
                 # grab the original image and reconstructed image
-                original = (gt[i] * 255).astype("uint8")
-                recon = (decoded[i] * 255).astype("uint8")
+                i_sorted = errors_sorted[i]
+                original = (gt[i_sorted] * 255).astype("uint8")
+                recon = (decoded[i_sorted] * 255).astype("uint8")
 
             # stack the original and reconstructed image side-by-side
             output = np.hstack([original, recon])
+            v = "" if i >= gt.shape[0] else '      %0.6f' % math.log2(errors[errors_sorted[i]] * 5000)
+            text = np.expand_dims(draw_text(v), axis=-1)
+            output = np.vstack([output, text])
 
             # if the outputs array is empty, initialize it as the current
             # side-by-side image display
