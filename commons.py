@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 from PIL import Image
 from PIL import ImageDraw
+import imagehash
 
 from settings import *
 
@@ -107,7 +108,18 @@ def build_unsupervised_dataset(data, labels, kind='mnist'):
     return np.vstack([validImages]), np.vstack([anomalyImages])
 
 
-def visualize_predictions(decoded, images):
+def dm_func_mean(image, recon):
+    err = np.mean((image - recon) ** 2)
+    return math.log2(err * 5000)
+
+
+def dm_func_hash(image, recon):
+    image_hash = imagehash.average_hash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
+    recon_hash = imagehash.average_hash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
+    return image_hash - recon_hash
+
+
+def visualize_predictions(decoded, images, dm_func=dm_func_mean):
     # initialize our list of output images
     gt = images
     outputs2 = None
@@ -117,7 +129,7 @@ def visualize_predictions(decoded, images):
     for (image, recon) in zip(images, decoded):
         # compute the mean squared error between the ground-truth image
         # and the reconstructed image, then add it to our list of errors
-        mse = np.mean((image - recon) ** 2)
+        mse = dm_func(image, recon)
         errors.append(mse)
     errors_sorted = np.argsort(errors)[::-1]
 
@@ -137,7 +149,7 @@ def visualize_predictions(decoded, images):
 
             # stack the original and reconstructed image side-by-side
             output = np.hstack([original, recon])
-            v = "" if i >= gt.shape[0] else '      %0.6f' % math.log2(errors[errors_sorted[i]] * 5000)
+            v = "" if i >= gt.shape[0] else '      %0.6f' % errors[errors_sorted[i]]
             text = np.expand_dims(draw_text(v), axis=-1)
             output = np.vstack([output, text])
 

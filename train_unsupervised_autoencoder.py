@@ -72,20 +72,13 @@ else:
 # testing images, construct the visualization, and then save it
 # to disk
 
-print("[INFO] making predictions on train set...")
-decoded = autoencoder.predict(trainX)
-vis = visualize_predictions(decoded, trainX)
-cv2.imwrite("%s_vis_train_%d.png" % (args["kind"], used_seed), vis)
+for df_func, df_name in zip([dm_func_mean, dm_func_hash], ['mean', 'hash']):
+	for img_set, set_names in zip([trainX, testX, testOutX], ['train', 'fit', 'test']):
+		print("[INFO] making predictions on train set...")
+		decoded = autoencoder.predict(img_set)
+		vis = visualize_predictions(decoded, img_set, df_func)
+		cv2.imwrite("%s_vis_%s_%d_%s.png" % (args["kind"], set_names, used_seed, df_name), vis)
 
-print("[INFO] making predictions on test set used for fit...")
-decoded = autoencoder.predict(testX)
-vis = visualize_predictions(decoded, testX)
-cv2.imwrite("%s_vis_%d.png" % (args["kind"], used_seed), vis)
-
-print("[INFO] making predictions on new data...")
-decoded = autoencoder.predict(testOutX)
-vis = visualize_predictions(decoded, testOutX)
-cv2.imwrite("%s_vis_test_%d.png" % (args["kind"], used_seed), vis)
 
 # serialize the image data to disk
 #print("[INFO] saving image data...")
