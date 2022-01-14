@@ -47,10 +47,10 @@ def set_global_determinism(seed=SEED, fast_n_close=False):
     nn_ops.bias_add = _new_bias_add_1_14  # called from tests
 
 
-def draw_text(text):
+def draw_text(text, color=255):
     img = Image.new("L", (120, 12), 0)
     draw = ImageDraw.Draw(img)
-    draw.text((0, 0), text, 255)
+    draw.text((0, 0), text, color)
     return np.array(img)
 
 
@@ -113,13 +113,49 @@ def dm_func_mean(image, recon):
     return math.log2(err * 5000)
 
 
-def dm_func_hash(image, recon):
+def dm_func_avg_hash(image, recon):
     image_hash = imagehash.average_hash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
     recon_hash = imagehash.average_hash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
     return image_hash - recon_hash
 
 
-def visualize_predictions(decoded, images, dm_func=dm_func_mean):
+def dm_func_p_hash(image, recon):
+    image_hash = imagehash.phash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
+    recon_hash = imagehash.phash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
+    return image_hash - recon_hash
+
+
+def dm_func_d_hash(image, recon):
+    image_hash = imagehash.dhash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
+    recon_hash = imagehash.dhash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
+    return image_hash - recon_hash
+
+
+def dm_func_haar_hash(image, recon):
+    image_hash = imagehash.whash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
+    recon_hash = imagehash.whash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
+    return image_hash - recon_hash
+
+
+def dm_func_db4_hash(image, recon):
+    image_hash = imagehash.whash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)), mode='db4')
+    recon_hash = imagehash.whash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)), mode='db4')
+    return image_hash - recon_hash
+
+
+def dm_func_cr_hash(image, recon):
+    image_hash = imagehash.crop_resistant_hash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
+    recon_hash = imagehash.crop_resistant_hash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
+    return image_hash - recon_hash
+
+
+def dm_func_color_hash(image, recon):
+    image_hash = imagehash.colorhash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
+    recon_hash = imagehash.colorhash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
+    return image_hash - recon_hash
+
+
+def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_half=False):
     # initialize our list of output images
     gt = images
     outputs2 = None
@@ -141,6 +177,7 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean):
             if i >= gt.shape[0]:
                 original = np.full(gt[0].shape, 0)
                 recon = original
+                i_sorted = 0
             else:
                 # grab the original image and reconstructed image
                 i_sorted = errors_sorted[i]
@@ -150,7 +187,10 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean):
             # stack the original and reconstructed image side-by-side
             output = np.hstack([original, recon])
             v = "" if i >= gt.shape[0] else '      %0.6f' % errors[errors_sorted[i]]
-            text = np.expand_dims(draw_text(v), axis=-1)
+            color = 255
+            if marked_first_half and i_sorted < gt.shape[0]/2:
+                color = 128
+            text = np.expand_dims(draw_text(v, color), axis=-1)
             output = np.vstack([output, text])
 
             # if the outputs array is empty, initialize it as the current
@@ -177,16 +217,16 @@ def prepare_dataset(args, augmentation=False):
     if args["kind"] == "mnist":
         from tensorflow.keras.datasets import mnist
         print("[INFO] loading MNIST dataset...")
-        ((trainX, trainY), (testX, testY)) = mnist.load_data()
+        ((train_set, trainY), (unused_set, unused_set2)) = mnist.load_data()
     else:
         from dataset_loader import load_dataset
         print("[INFO] loading CREDO dataset...")
-        trainX, trainY = load_dataset()
+        train_set, trainY = load_dataset()
 
     # build our unsupervised dataset of images with a small amount of
     # contamination (i.e., anomalies) added into it
     print("[INFO] creating unsupervised dataset...")
-    images, anomalies = build_unsupervised_dataset(trainX, trainY, kind=args["kind"])
+    images, anomalies = build_unsupervised_dataset(train_set, trainY, kind=args["kind"])
 
     # add a channel dimension to every image in the dataset, then scale
     # the pixel intensities to the range [0, 1]
@@ -197,15 +237,15 @@ def prepare_dataset(args, augmentation=False):
     anomalies = anomalies.astype("float32") / 255.0
 
     # construct the training and testing split
-    (trainX, testOutX) = train_test_split(images, test_size=0.2)
+    (train_set, test_set) = train_test_split(images, test_size=0.2)
 
     if augmentation:
-        trainX = do_augmentation(trainX)
+        train_set = do_augmentation(train_set)
 
-    (trainX, testX) = train_test_split(trainX, test_size=0.2)
+    (train_set, validation_set) = train_test_split(train_set, test_size=0.2)
 
     # prepare test set
-    max_test = min(anomalies.shape[0], testOutX.shape[0])
-    testOutX = np.vstack([anomalies[0:max_test], testOutX[0:max_test]])
+    max_test = min(anomalies.shape[0], test_set.shape[0])
+    test_set = np.vstack([anomalies[0:max_test], test_set[0:max_test]])
 
-    return trainX, testX, testOutX
+    return train_set, validation_set, test_set

@@ -2,16 +2,11 @@
 
 import matplotlib
 # import the necessary packages
-from PIL import Image
-from PIL import ImageDraw
-
 from tensorflow.keras.models import load_model
 from pyimagesearch.convautoencoder import ConvAutoencoder
 from tensorflow.keras.optimizers import Adam
 import matplotlib.pyplot as plt
-import numpy as np
 import argparse
-import pickle
 import cv2
 
 from commons import *
@@ -36,7 +31,7 @@ args = vars(ap.parse_args())
 
 used_seed = args["seed"]
 set_global_determinism(used_seed)
-trainX, testX, testOutX = prepare_dataset(args, augmentation=True)
+train_set, validation_set, test_set = prepare_dataset(args, augmentation=True)
 
 
 # construct our convolutional autoencoder
@@ -50,9 +45,9 @@ else:
 
 	# train the convolutional autoencoder
 	H = autoencoder.fit(
-		trainX, trainX,
+		train_set, train_set,
 		shuffle=False,
-		validation_data=(testX, testX),
+		validation_data=(validation_set, validation_set),
 		epochs=EPOCHS,
 		batch_size=BS)
 
@@ -72,11 +67,13 @@ else:
 # testing images, construct the visualization, and then save it
 # to disk
 
-for df_func, df_name in zip([dm_func_mean, dm_func_hash], ['mean', 'hash']):
-	for img_set, set_names in zip([trainX, testX, testOutX], ['train', 'fit', 'test']):
+for df_func, df_name in zip([
+	dm_func_mean, dm_func_avg_hash, dm_func_p_hash, dm_func_d_hash, dm_func_haar_hash, dm_func_db4_hash, dm_func_cr_hash, dm_func_color_hash
+], ['mean', 'aHashref', 'pHashref', 'dHashref', 'wHashref_haar', 'wHashref_db4', 'crop_resistant_hashref', 'colorhash']):
+	for img_set, set_names in zip([train_set, validation_set, test_set], ['train', 'validation', 'test']):
 		print("[INFO] making predictions on train set...")
 		decoded = autoencoder.predict(img_set)
-		vis = visualize_predictions(decoded, img_set, df_func)
+		vis = visualize_predictions(decoded, img_set, df_func, set_names == 'test')
 		cv2.imwrite("%s_vis_%s_%d_%s.png" % (args["kind"], set_names, used_seed, df_name), vis)
 
 
