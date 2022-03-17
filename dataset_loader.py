@@ -37,7 +37,7 @@ def load_images(src):
         image = np.asarray(Image.open(image_path))
         image = do_binarize(image)
         images.append(image)
-    return np.asarray(images)
+    return np.asarray(images).astype("float32") / 255.0
 
 
 def do_augmentation2(images, mul=1, data_augmentation=None):
