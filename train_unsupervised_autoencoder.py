@@ -11,6 +11,13 @@ import cv2
 
 from commons import *
 
+# TODO: dla kanału kropek (z osobna sprawdzać dla innych kanałek tj. kropek, tracków, robaków i szukać kiedy najlepszy rezultat)
+# - spróbować większe filtry np. 5x5, 7x7 itd.
+# - mniej w features np. 8, 16 (nie 32, 64)
+# - więcej tych warstw spróbować
+# optymalizacja bayesowska, która ma powiedzięć jaki układ parametrów jest najlepszy
+
+
 img = Image.new("L", (120, 12), 0)
 draw = ImageDraw.Draw(img)
 draw.text((0, 0), "This is a testy", 255)
@@ -31,7 +38,7 @@ args = vars(ap.parse_args())
 
 used_seed = args["seed"]
 set_global_determinism(used_seed)
-train_set, validation_set, test_set = prepare_dataset(args, augmentation=True)
+train_set, validation_set, test_set = prepare_dataset(args, augmentation=False)
 
 
 # construct our convolutional autoencoder
@@ -42,6 +49,7 @@ else:
 	(encoder, decoder, autoencoder) = ConvAutoencoder.build(28, 28, 1) if args['kind'] == 'mnist' else ConvAutoencoder.build(60, 60, 1)
 	opt = Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
 	autoencoder.compile(loss="mse", optimizer=opt)
+	autoencoder.summary()
 
 	# train the convolutional autoencoder
 	H = autoencoder.fit(
@@ -70,7 +78,8 @@ else:
 for df_func, df_name in zip([
 	dm_func_mean, dm_func_avg_hash, dm_func_p_hash, dm_func_d_hash, dm_func_haar_hash, dm_func_db4_hash, dm_func_cr_hash, dm_func_color_hash
 ], ['mean', 'aHashref', 'pHashref', 'dHashref', 'wHashref_haar', 'wHashref_db4', 'crop_resistant_hashref', 'colorhash']):
-	for img_set, set_names in zip([train_set, validation_set, test_set], ['train', 'validation', 'test']):
+	for img_set, set_names in zip([test_set], ['test']):
+	#for img_set, set_names in zip([train_set, validation_set, test_set], ['train', 'validation', 'test']):
 		print("[INFO] making predictions on train set...")
 		decoded = autoencoder.predict(img_set)
 		vis = visualize_predictions(decoded, img_set, df_func, set_names == 'test')

@@ -107,4 +107,4 @@ for nj in range(0, r):
 # show the output visualization
 #cv2.imshow("Output", outputs2)
 #cv2.waitKey(0)
-cv2.imwrite("test.png", outputs2)
+cv2.imwrite("old/test.png", outputs2)

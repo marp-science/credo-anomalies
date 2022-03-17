@@ -32,6 +32,7 @@ def set_global_determinism(seed=SEED, fast_n_close=False):
 
     os.environ['TF_DETERMINISTIC_OPS'] = '1'
     os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+    os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
     # https://www.tensorflow.org/api_docs/python/tf/config/threading/set_inter_op_parallelism_threads
     tf.config.threading.set_inter_op_parallelism_threads(1)
     tf.config.threading.set_intra_op_parallelism_threads(1)
@@ -63,7 +64,7 @@ def do_augmentation(trainX):
     arr = []
     for image in trainX:
         image = tf.expand_dims(image, 0)
-        for i in range(0, 10):
+        for i in range(0, 100):
             augmented_image = data_augmentation(image)
             arr.append(augmented_image[0])
     return np.vstack([arr])
@@ -82,6 +83,12 @@ def build_unsupervised_dataset(data, labels, kind='mnist'):
     elif kind == 'tracks_vs_worms':
         validIdxs = np.where(labels == 2)[0]
         anomalyIdxs = np.where(labels == 3)[0]
+    elif kind == 'dots_vs_worms':
+        validIdxs = np.where(labels == 1)[0]
+        anomalyIdxs = np.where(labels == 3)[0]
+    elif kind == 'dots_vs_tracks':
+        validIdxs = np.where(labels == 1)[0]
+        anomalyIdxs = np.where(labels == 2)[0]
     else:
         raise Exception('Bad kind')
 

@@ -29,35 +29,60 @@ class ConvAutoencoder:
 		# loop over the number of filters
 		for f in filters:
 			# apply a CONV => RELU => BN operation
-			x = Conv2D(f, (3, 3), strides=2, padding="same")(x)
-			x = LeakyReLU(alpha=0.2)(x)
-			x = BatchNormalization(axis=chanDim)(x)
+			c = Conv2D(f, (3, 3), strides=2, padding="same")
+			x = c(x)
+			print(c.count_params())
+			c = LeakyReLU(alpha=0.2)
+			x = c(x)
+			print(c.count_params())
+			c = BatchNormalization(axis=chanDim)
+			x = c(x)
+			print(c.count_params())
 
 		# flatten the network and then construct our latent vector
 		volumeSize = K.int_shape(x)
-		x = Flatten()(x)
-		latent = Dense(latentDim)(x)
+		c = Flatten()
+		x = c(x)
+		print(c.count_params())
+		c = Dense(latentDim)
+		latent = c(x)
+		print(c.count_params())
 		# build the encoder model
 		encoder = Model(inputs, latent, name="encoder")
 
 		# start building the decoder model which will accept the
 		# output of the encoder as its inputs
 		latentInputs = Input(shape=(latentDim,))
-		x = Dense(np.prod(volumeSize[1:]))(latentInputs)
-		x = Reshape((volumeSize[1], volumeSize[2], volumeSize[3]))(x)
+		p = np.prod(volumeSize[1:])
+		c = Dense(p)
+		x = c(latentInputs)
+		print(c.count_params())
+
+		c = Reshape((volumeSize[1], volumeSize[2], volumeSize[3]))
+		x = c(x)
+		print(c.count_params())
 
 		# loop over our number of filters again, but this time in
 		# reverse order
 		for f in filters[::-1]:
 			# apply a CONV_TRANSPOSE => RELU => BN operation
-			x = Conv2DTranspose(f, (3, 3), strides=2,
-				padding="same")(x)
-			x = LeakyReLU(alpha=0.2)(x)
-			x = BatchNormalization(axis=chanDim)(x)
+			c = Conv2DTranspose(f, (3, 3), strides=2, padding="same")
+			x = c(x)
+			print(c.count_params())
+
+			c = LeakyReLU(alpha=0.2)
+			x = c(x)
+			print(c.count_params())
+
+			c = BatchNormalization(axis=chanDim)
+			x = c(x)
+			print(c.count_params())
 
 		# apply a single CONV_TRANSPOSE layer used to recover the
 		# original depth of the image
-		x = Conv2DTranspose(depth, (3, 3), padding="same")(x)
+		c = Conv2DTranspose(depth, (3, 3), padding="same")
+		x = c(x)
+		print(c.count_params())
 		outputs = Activation("sigmoid")(x)
 
 		# build the decoder model
