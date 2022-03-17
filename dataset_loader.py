@@ -73,14 +73,15 @@ def load_dataset_with_cache(dataset, augmentation=1, force_load=False):
     if not force_load and exists(fn):
         return pickle.loads(open(fn, "rb").read())
 
-    images = prepare_data(DATA_SETS[dataset], augmentation)
-    images = np.expand_dims(images, axis=-1)
+    images = np.expand_dims(prepare_data(DATA_SETS[dataset], 1), axis=-1)
+    expanded = np.expand_dims(prepare_data(DATA_SETS[dataset], augmentation), axis=-1)
+    data_set = (images, expanded)
 
     f = open(fn, "wb")
-    f.write(pickle.dumps(images))
+    f.write(pickle.dumps(data_set))
     f.close()
 
-    return images
+    return data_set
 
 
 def load_dataset():

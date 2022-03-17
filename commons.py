@@ -270,7 +270,7 @@ def original_autoencoder():
     return autoencoder
 
 
-def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epochs=EPOCHS, batch_size=BS, shuffle=False):
+def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epochs=EPOCHS, batch_size=BS, shuffle=False, validation_set=None):
     from os.path import exists
     from keras.models import load_model
     import matplotlib.pyplot as plt
@@ -287,7 +287,7 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
         train_set,
         train_set,
         shuffle=shuffle,
-        #validation_data=(validation_set, validation_set),
+        validation_data=(validation_set, validation_set) if validation_set is not None else None,
         epochs=epochs,
         batch_size=batch_size
     )
@@ -300,7 +300,8 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
     plt.style.use("ggplot")
     plt.figure()
     plt.plot(N, H.history["loss"], label="train_loss")
-    #plt.plot(N, H.history["val_loss"], label="val_loss")
+    if validation_set is not None:
+        plt.plot(N, H.history["val_loss"], label="val_loss")
     plt.title("Training Loss")
     plt.xlabel("Epoch #")
     plt.ylabel("Loss")
