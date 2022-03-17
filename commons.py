@@ -162,11 +162,13 @@ def dm_func_color_hash(image, recon):
     return image_hash - recon_hash
 
 
-def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_half=False):
+def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_half=False, max_samples=None):
     # initialize our list of output images
     gt = images
     outputs2 = None
     samples = math.ceil(math.sqrt(gt.shape[0]))
+    if max_samples is not None:
+        samples = min(samples, max_samples)
 
     errors = []
     for (image, recon) in zip(images, decoded):
@@ -217,7 +219,7 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_ha
             outputs2 = np.hstack([outputs2, outputs])
 
     # return the output images
-    return outputs2
+    return outputs2, errors
 
 
 def prepare_dataset(args, augmentation=False):
@@ -279,30 +281,30 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
         print('Load from: %s' % fn)
         return load_model(fn)
 
-    (input_set, validation_set) = train_test_split(train_set, test_size=0.2)
+    #(input_set, validation_set) = train_test_split(train_set, test_size=0.2)
     # train the convolutional autoencoder
     H = autoencoder.fit(
-        input_set,
-        input_set,
+        train_set,
+        train_set,
         shuffle=shuffle,
-        validation_data=(validation_set, validation_set),
+        #validation_data=(validation_set, validation_set),
         epochs=epochs,
         batch_size=batch_size
     )
+
+    if fncache is not None:
+        autoencoder.save(fn, save_format="h5")
+        print('Saved in: %s' % fn)
 
     N = np.arange(0, EPOCHS)
     plt.style.use("ggplot")
     plt.figure()
     plt.plot(N, H.history["loss"], label="train_loss")
-    plt.plot(N, H.history["val_loss"], label="val_loss")
+    #plt.plot(N, H.history["val_loss"], label="val_loss")
     plt.title("Training Loss")
     plt.xlabel("Epoch #")
     plt.ylabel("Loss")
     plt.legend(loc="lower left")
     plt.savefig(fn.replace('.h5', 'png'))
-
-    if fncache is not None:
-        autoencoder.save(fn, save_format="h5")
-        print('Saved in: %s' % fn)
 
     return autoencoder

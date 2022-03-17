@@ -74,6 +74,7 @@ def load_dataset_with_cache(dataset, augmentation=1, force_load=False):
         return pickle.loads(open(fn, "rb").read())
 
     images = prepare_data(DATA_SETS[dataset], augmentation)
+    images = np.expand_dims(images, axis=-1)
 
     f = open(fn, "wb")
     f.write(pickle.dumps(images))
