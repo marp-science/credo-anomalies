@@ -273,9 +273,10 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
     from keras.models import load_model
     import matplotlib.pyplot as plt
 
-    fn = 'cache/%s.h5'
+    fn = 'cache/%s.h5' % str(fncache)
 
     if fncache is not None and exists(fn) and not force_train:
+        print('Load from: %s' % fn)
         return load_model(fn)
 
     (input_set, validation_set) = train_test_split(train_set, test_size=0.2)
@@ -299,5 +300,9 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
     plt.ylabel("Loss")
     plt.legend(loc="lower left")
     plt.savefig(fn.replace('.h5', 'png'))
-    autoencoder.save(fn, save_format="h5")
+
+    if fncache is not None:
+        autoencoder.save(fn, save_format="h5")
+        print('Saved in: %s' % fn)
+
     return autoencoder
