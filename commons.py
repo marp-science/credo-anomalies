@@ -55,7 +55,7 @@ def draw_text(text, color=255):
     return np.array(img)
 
 
-def do_augmentation(trainX):
+def do_augmentation(trainX, mul=100):
     data_augmentation = tf.keras.Sequential([
         layers.RandomFlip("horizontal_and_vertical"),
         layers.RandomRotation(0.2),
@@ -64,7 +64,7 @@ def do_augmentation(trainX):
     arr = []
     for image in trainX:
         image = tf.expand_dims(image, 0)
-        for i in range(0, 100):
+        for i in range(0, mul):
             augmented_image = data_augmentation(image)
             arr.append(augmented_image[0])
     return np.vstack([arr])
@@ -256,3 +256,48 @@ def prepare_dataset(args, augmentation=False):
     test_set = np.vstack([anomalies[0:max_test], test_set[0:max_test]])
 
     return train_set, validation_set, test_set
+
+
+def original_autoencoder():
+    from pyimagesearch.convautoencoder import ConvAutoencoder
+    from keras.optimizer_v2.adam import Adam
+
+    (encoder, decoder, autoencoder) = ConvAutoencoder.build(60, 60, 1)
+    opt = Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
+    autoencoder.compile(loss="mse", optimizer=opt)
+    return autoencoder
+
+
+def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epochs=EPOCHS, batch_size=BS, shuffle=False):
+    from os.path import exists
+    from keras.models import load_model
+    import matplotlib.pyplot as plt
+
+    fn = 'cache/%s.h5'
+
+    if fncache is not None and exists(fn) and not force_train:
+        return load_model(fn)
+
+    (input_set, validation_set) = train_test_split(train_set, test_size=0.2)
+    # train the convolutional autoencoder
+    H = autoencoder.fit(
+        input_set,
+        input_set,
+        shuffle=shuffle,
+        validation_data=(validation_set, validation_set),
+        epochs=epochs,
+        batch_size=batch_size
+    )
+
+    N = np.arange(0, EPOCHS)
+    plt.style.use("ggplot")
+    plt.figure()
+    plt.plot(N, H.history["loss"], label="train_loss")
+    plt.plot(N, H.history["val_loss"], label="val_loss")
+    plt.title("Training Loss")
+    plt.xlabel("Epoch #")
+    plt.ylabel("Loss")
+    plt.legend(loc="lower left")
+    plt.savefig(fn.replace('.h5', 'png'))
+    autoencoder.save(fn, save_format="h5")
+    return autoencoder

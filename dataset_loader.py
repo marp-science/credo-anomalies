@@ -4,6 +4,16 @@ import random
 from PIL import Image
 from imageio import imread
 import numpy as np
+import tensorflow as tf
+from keras.layers import RandomFlip, RandomRotation
+
+
+DATA_SETS = {
+    'dots': "hit-images-final/hits_votes_4_Dots",
+    'tracks': "hit-images-final/hits_votes_4_Lines",
+    'worms': "hit-images-final/hits_votes_4_Worms",
+    'artifacts': "hit-images-final/artefacts"
+}
 
 
 def do_binarize(image):
@@ -22,12 +32,54 @@ def load_images(src):
     files = list(glob.glob("%s/*.png" % src))
     files = sorted(files)
     for image_path in files:
-        print(image_path)
+        #print(image_path)
         #image = np.asarray(Image.open(image_path).convert('L'))
         image = np.asarray(Image.open(image_path))
         image = do_binarize(image)
         images.append(image)
     return np.asarray(images)
+
+
+def do_augmentation2(images, mul=1, data_augmentation=None):
+    if mul == 1:
+        return images
+
+    if data_augmentation is None:
+        data_augmentation = tf.keras.Sequential([
+            RandomFlip("horizontal_and_vertical"),
+            RandomRotation(0.2),
+        ])
+
+    arr = []
+    for image in images:
+        image = tf.expand_dims(image, 0)
+        for i in range(0, mul):
+            augmented_image = data_augmentation(image)
+            arr.append(augmented_image[0])
+    return np.vstack([arr])
+
+
+def prepare_data(src, augmentation=1):
+    images = load_images(src)
+    expanded = do_augmentation2(images, augmentation)
+    return expanded
+
+
+def load_dataset_with_cache(dataset, augmentation=1, force_load=False):
+    from os.path import exists
+    import pickle
+
+    fn = 'cache/dataset_%s_%d.pickle' % (dataset, augmentation)
+    if not force_load and exists(fn):
+        return pickle.loads(open(fn, "rb").read())
+
+    images = prepare_data(DATA_SETS[dataset], augmentation)
+
+    f = open(fn, "wb")
+    f.write(pickle.dumps(images))
+    f.close()
+
+    return images
 
 
 def load_dataset():
