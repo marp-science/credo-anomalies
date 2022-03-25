@@ -1,4 +1,5 @@
 import glob
+import math
 import random
 
 from PIL import Image
@@ -82,6 +83,50 @@ def load_dataset_with_cache(dataset, augmentation=1, force_load=False):
     f.close()
 
     return data_set
+
+
+def load_dataset_with_augmentation(source_dir, augmentation=None, min_count=None):
+    """
+    Wczytanie sampli z opcjonalną augmentacją. Użyć parametru augmentation albo min_count, nie obu na raz.
+
+    :param source_dir: katalog źródłowy z plikami PNG.
+    :param augmentation: krotność augmentacji.
+    :param min_count: minimalna liczba próbek po augmentacji.
+    :return: (dane, augmentowane_dane)
+    """
+    images = load_images(source_dir)
+    if augmentation is not None:
+        expanded = do_augmentation2(images, augmentation)
+    elif min_count is not None:
+        expanded = do_augmentation2(images, math.ceil(min_count / len(images)))
+    else:
+        expanded = images
+    return images, expanded
+
+
+def save_to_file(fn, data):
+    """
+    Zrzut danych do pliku. Można je z powrotem załadować za pomocą load_from_file.
+
+    :param fn: nazwa pliku.
+    :param data: dane do zapisu.
+    """
+    import pickle
+    f = open(fn, "wb")
+    f.write(pickle.dumps(data))
+    f.close()
+
+
+def load_from_file(fn):
+    """
+    Wczytanie danych zapisanych wcześniej przez save_to_file.
+
+    :param fn: nazwa pliku.
+    :return: wczytane dane.
+    """
+
+    import pickle
+    return pickle.loads(open(fn, "rb").read())
 
 
 def load_dataset():

@@ -275,7 +275,7 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
     from keras.models import load_model
     import matplotlib.pyplot as plt
 
-    fn = 'cache/%s.h5' % str(fncache)
+    fn = fncache  # 'cache/%s.h5' % str(fncache)
 
     if fncache is not None and exists(fn) and not force_train:
         print('Load from: %s' % fn)

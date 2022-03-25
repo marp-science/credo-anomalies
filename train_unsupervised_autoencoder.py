@@ -11,6 +11,12 @@ import cv2
 
 from commons import *
 
+# TODO: 4 osobne obrazki + razem (razem 5)
+#
+# ważyć przez ilość aktywnych pixeli
+# np. kropki skłądają się z małej ilość, więc
+# zawsze wychodzą bardziej podobne
+
 # TODO: dla kanału kropek (z osobna sprawdzać dla innych kanałek tj. kropek, tracków, robaków i szukać kiedy najlepszy rezultat)
 # - spróbować większe filtry np. 5x5, 7x7 itd.
 # - mniej w features np. 8, 16 (nie 32, 64)
