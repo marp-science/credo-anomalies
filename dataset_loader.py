@@ -41,6 +41,28 @@ def load_images(src):
     return np.asarray(images).astype("float32") / 255.0
 
 
+def prepare_dataset(src):
+    """
+    Obrazki po wczytaniu z dysku są w shapie (N, 60, 60), a do autoencodera potrzeba (N, 60, 60, 1)
+    :param src: tablica ze shape (N, 60, 60) lub (60, 60) gdy to tylko jeden obrazek
+    :return: tablica ze shape (N, 60, 60, 1)
+    """
+    if len(src.shape) == 4 and src.shape[1] == 60 and src.shape[2] == 60 and src.shape[3] == 1:
+        # jest ok
+        return src
+
+    if len(src.shape) == 3 and src.shape[1] == 60 and src.shape[2] == 60:
+        # jest to świeży image set, więc dodanie ", 1" do shape
+        return np.expand_dims(src, axis=-1)
+
+    if len(src.shape) == 2 and src.shape[0] == 60 and src.shape[1] == 60:
+        # to pojedynczy obrazek, więc zrobienie tablicy i dodanie ", 1" do shape
+        arr = np.expand_dims(src, axis=0)
+        return np.expand_dims(arr, axis=-1)
+
+    raise Exception("Wymagany shape (N, 60, 60), lub (60, 60), ewentualnie (N, 60, 60, 1) ale wtedy nic nie jest zmieniane")
+
+
 def do_augmentation2(images, mul=1, data_augmentation=None):
     if mul == 1:
         return images
