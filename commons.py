@@ -309,3 +309,26 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
     plt.savefig(fn.replace('.h5', 'png'))
 
     return autoencoder
+
+
+def binarize_image(image, cutoff_qt_value=0):
+    """
+    Binaryzacja obrazka na podstawie podanego progu. Domyślnie, co nie jest całkiem czarne, jest białe.
+
+    :param image: źródlowy obrazek
+    :param cutoff_qt_value: próg binaryzacji, 1 - większe od progu
+    :return:
+    """
+    return np.where(image > cutoff_qt_value, 1, 0)
+
+
+def cutoff_reconstruction_background(image, reconstruction):
+    """
+    Odcina tło od rekonstrukcji, która w oryginalnym obrazku była tłem.
+
+    W oryginalnym obrazku mamy coś na tle czerni (0).
+
+    :return: rekonstrukcja z obciętym tłem
+    """
+    return binarize_image(image, 0) * reconstruction
+
