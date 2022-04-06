@@ -332,3 +332,65 @@ def cutoff_reconstruction_background(image, reconstruction):
     """
     return binarize_image(image, 0) * reconstruction
 
+def count_non_black_pixels(image):
+    """
+    Zwraca liczbę nieczarnych pikseli z obrazka.
+
+    :param image: obrazek.
+    :return: liczba nieczarnych pikseli.
+    """
+    return np.count_nonzero(image)
+
+
+def compute_errors(image, recon, dm_func, normalize=True):
+    """
+    Obliczanie błędu.
+
+    :param image: obrazek źródłowy.
+    :param recon: rekonstrukcja.
+    :param dm_func: funkcja porównująca, jako parametr przyjmuje (image, recon), zwraca skalar będący miarą podobieństwa.
+    :param normalize: jeśli true, to dzieli wynik dm_func przez liczbę nieczarnych pikseli z image.
+    :return: tablica
+    """
+    return dm_func(image, recon, normalize)
+
+
+def prepare_for_histogram(images, reconstructions, dm_func, normalize=True, cutoff_background=False, binarize_for_compare=False):
+    errors = []
+    for (image, recon) in zip(images, reconstructions):
+        try:
+            if cutoff_background:
+                recon = cutoff_reconstruction_background(image, recon)
+            if binarize_for_compare:
+                image = binarize_image(image)
+                recon = binarize_image(recon)
+            mse = compute_errors(image, recon, dm_func, normalize)
+            errors.append(mse)
+        except:
+            errors.append(0)
+    return errors
+
+
+def dm_func_mean2(image, recon, normalize=True):
+    blacks = 1
+    if normalize:
+        blacks = count_non_black_pixels(image)
+    if blacks == 0:
+        blacks = 1
+
+    err = np.mean((image - recon) ** 2) / (blacks ** 2)
+    return math.log2(err * 5000)
+
+
+def calc_similarity(autoencoder, dots_set, tracks_set, worms_set, artifacts_set, **argv):
+    dots_reconstruction = autoencoder.predict(dots_set)
+    worms_reconstruction = autoencoder.predict(worms_set)
+    tracks_reconstruction = autoencoder.predict(tracks_set)
+    artifacts_reconstruction = autoencoder.predict(artifacts_set)
+
+    return {
+        'dots': prepare_for_histogram(dots_set, dots_reconstruction, dm_func_mean2, **argv),
+        'worms': prepare_for_histogram(worms_set, worms_reconstruction, dm_func_mean2, **argv),
+        'tracks': prepare_for_histogram(tracks_set, tracks_reconstruction, dm_func_mean2, **argv),
+        'artifacts': prepare_for_histogram(artifacts_set, artifacts_reconstruction, dm_func_mean2, **argv)
+    }
