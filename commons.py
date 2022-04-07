@@ -115,51 +115,74 @@ def build_unsupervised_dataset(data, labels, kind='mnist'):
     return np.vstack([validImages]), np.vstack([anomalyImages])
 
 
+def normalize_indicator(image, normalize=True):
+    blacks = 1
+    if normalize:
+        blacks = count_non_black_pixels(image)
+    if blacks == 0:
+        blacks = 1
+    return blacks
+
+
 def dm_func_mean(image, recon):
     err = np.mean((image - recon) ** 2)
     return math.log2(err * 5000)
 
 
-def dm_func_avg_hash(image, recon):
+def dm_func_avg_hash(image, recon, normalize=True):
+    blacks = normalize_indicator(image, normalize)
+
     image_hash = imagehash.average_hash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
     recon_hash = imagehash.average_hash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
-    return image_hash - recon_hash
+    return (image_hash - recon_hash) / (blacks ** 2)
 
 
-def dm_func_p_hash(image, recon):
+def dm_func_p_hash(image, recon, normalize=True):
+    blacks = normalize_indicator(image, normalize)
+
     image_hash = imagehash.phash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
     recon_hash = imagehash.phash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
-    return image_hash - recon_hash
+    return (image_hash - recon_hash) / (blacks ** 2)
 
 
-def dm_func_d_hash(image, recon):
+def dm_func_d_hash(image, recon, normalize=True):
+    blacks = normalize_indicator(image, normalize)
+
     image_hash = imagehash.dhash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
     recon_hash = imagehash.dhash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
-    return image_hash - recon_hash
+    return (image_hash - recon_hash) / (blacks ** 2)
 
 
-def dm_func_haar_hash(image, recon):
+def dm_func_haar_hash(image, recon, normalize=True):
+    blacks = normalize_indicator(image, normalize)
+
     image_hash = imagehash.whash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
     recon_hash = imagehash.whash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
-    return image_hash - recon_hash
+    return (image_hash - recon_hash) / (blacks ** 2)
 
 
-def dm_func_db4_hash(image, recon):
+def dm_func_db4_hash(image, recon, normalize=True):
+    blacks = normalize_indicator(image, normalize)
+
     image_hash = imagehash.whash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)), mode='db4')
     recon_hash = imagehash.whash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)), mode='db4')
-    return image_hash - recon_hash
+    return (image_hash - recon_hash) / (blacks ** 2)
 
 
-def dm_func_cr_hash(image, recon):
+def dm_func_cr_hash(image, recon, normalize=True):
+    blacks = normalize_indicator(image, normalize)
+
     image_hash = imagehash.crop_resistant_hash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
     recon_hash = imagehash.crop_resistant_hash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
-    return image_hash - recon_hash
+    return (image_hash - recon_hash) / (blacks ** 2)
 
 
-def dm_func_color_hash(image, recon):
+def dm_func_color_hash(image, recon, normalize=True):
+    blacks = normalize_indicator(image, normalize)
+
     image_hash = imagehash.colorhash(Image.fromarray(np.uint8(np.squeeze(image, axis=-1) * 255)))
     recon_hash = imagehash.colorhash(Image.fromarray(np.uint8(np.squeeze(recon, axis=-1) * 255)))
-    return image_hash - recon_hash
+    return (image_hash - recon_hash) / (blacks ** 2)
 
 
 def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_half=False, max_samples=None):
@@ -341,7 +364,6 @@ def count_non_black_pixels(image):
     """
     return np.count_nonzero(image)
 
-
 def compute_errors(image, recon, dm_func, normalize=True):
     """
     Obliczanie błędu.
@@ -372,27 +394,23 @@ def prepare_for_histogram(images, reconstructions, dm_func, normalize=True, cuto
 
 
 def dm_func_mean2(image, recon, normalize=True):
-    blacks = 1
-    if normalize:
-        blacks = count_non_black_pixels(image)
-    if blacks == 0:
-        blacks = 1
+    blacks = normalize_indicator(image, normalize)
 
     err = np.mean((image - recon) ** 2) / (blacks ** 2)
     return math.log2(err * 5000)
 
 
-def calc_similarity(autoencoder, dots_set, tracks_set, worms_set, artifacts_set, **argv):
+def calc_similarity(autoencoder, dots_set, tracks_set, worms_set, artifacts_set, dm_func=dm_func_mean2, **argv):
     dots_reconstruction = autoencoder.predict(dots_set)
     worms_reconstruction = autoencoder.predict(worms_set)
     tracks_reconstruction = autoencoder.predict(tracks_set)
     artifacts_reconstruction = autoencoder.predict(artifacts_set)
 
     return {
-        'dots': prepare_for_histogram(dots_set, dots_reconstruction, dm_func_mean2, **argv),
-        'worms': prepare_for_histogram(worms_set, worms_reconstruction, dm_func_mean2, **argv),
-        'tracks': prepare_for_histogram(tracks_set, tracks_reconstruction, dm_func_mean2, **argv),
-        'artifacts': prepare_for_histogram(artifacts_set, artifacts_reconstruction, dm_func_mean2, **argv)
+        'dots': prepare_for_histogram(dots_set, dots_reconstruction, dm_func, **argv),
+        'worms': prepare_for_histogram(worms_set, worms_reconstruction, dm_func, **argv),
+        'tracks': prepare_for_histogram(tracks_set, tracks_reconstruction, dm_func, **argv),
+        'artifacts': prepare_for_histogram(artifacts_set, artifacts_reconstruction, dm_func, **argv)
     }
 
 
