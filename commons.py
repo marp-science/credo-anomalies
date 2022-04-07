@@ -464,3 +464,49 @@ def plot_threshold(a, b, threshold, name_a, name_b):
     plt.ylabel("Count", size=14)
     plt.legend(loc='upper right')
     plt.show()
+
+
+def confusion_matrix(on):
+    import matplotlib.pyplot as plt
+
+    x_labels = ["dots", "tracks", "worms", "artifacts"]
+    y_labels = x_labels
+
+    matrix = np.zeros((len(x_labels), len(x_labels)), dtype=np.int32)
+
+    for i in range(0, len(x_labels)):
+        for j in range(0, len(x_labels)):
+            if i == j:
+                continue
+            la = x_labels[i]
+            lb = x_labels[j]
+            a = on[la][la]
+            b = on[la][lb]
+            threshold, percent = find_threshold(a, b)
+
+            print('Channel %s, compare %s vs %s, threshold: %s, fp/fn percent: %s %%' % (
+            la, la, lb, str(threshold), str(percent)))
+            plot_threshold(a, b, threshold, la, lb)
+
+            matrix[i, j] = int(100 - percent)
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(matrix)
+
+    # Show all ticks and label them with the respective list entries
+    ax.set_xticks(np.arange(len(x_labels)), labels=x_labels)
+    ax.set_yticks(np.arange(len(y_labels)), labels=y_labels)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    for i in range(len(x_labels)):
+        for j in range(len(y_labels)):
+            text = ax.text(j, i, matrix[i, j],
+                           ha="center", va="center", color="w")
+
+    ax.set_title("x - data set, y - channel")
+    fig.tight_layout()
+    plt.show()
