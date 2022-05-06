@@ -289,7 +289,8 @@ def original_autoencoder():
 
     (encoder, decoder, autoencoder) = ConvAutoencoder.build(60, 60, 1)
     opt = Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
-    autoencoder.compile(loss="mse", optimizer=opt)
+
+    autoencoder.compile(loss="mse", optimizer=opt, metrics=['accuracy'])
     return autoencoder
 
 
@@ -314,6 +315,7 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
         epochs=epochs,
         batch_size=batch_size
     )
+    # r = autoencoder.evaluate(validation_set, validation_set)
 
     if fncache is not None:
         autoencoder.save(fn, save_format="h5")
@@ -329,7 +331,19 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
     plt.xlabel("Epoch #")
     plt.ylabel("Loss")
     plt.legend(loc="lower left")
-    plt.savefig(fn.replace('.h5', 'png'))
+    plt.savefig(fn.replace('.h5', '_loss.png'))
+
+    N = np.arange(0, EPOCHS)
+    plt.style.use("ggplot")
+    plt.figure()
+    plt.plot(N, H.history["accuracy"], label="accuracy")
+    if validation_set is not None:
+        plt.plot(N, H.history["val_accuracy"], label="val_accuracy")
+    plt.title("Training Loss")
+    plt.xlabel("Epoch #")
+    plt.ylabel("Loss")
+    plt.legend(loc="lower left")
+    plt.savefig(fn.replace('.h5', '_accuracy.png'))
 
     return autoencoder
 
