@@ -414,6 +414,13 @@ def dm_func_mean2(image, recon, normalize=True):
     return math.log2(err * 5000)
 
 
+def dm_func_mean3(image, recon, normalize=True):
+    blacks = normalize_indicator(image, normalize)
+
+    err = np.mean((image - recon) ** 2) / (blacks ** 2)
+    return err
+
+
 def calc_similarity(autoencoder, dots_set, tracks_set, worms_set, artifacts_set, dm_func=dm_func_mean2, **argv):
     dots_reconstruction = autoencoder.predict(dots_set)
     worms_reconstruction = autoencoder.predict(worms_set)
@@ -434,12 +441,30 @@ def append_label_column(v, c):
     return transposed
 
 
-def find_threshold(a, b):
-    a = sorted(a)
-    b = sorted(b)
+def find_threshold(sa, sb):
+    a = sorted(sa)
+    b = sorted(sb)
 
-    ca = a[len(a) // 2]
-    cb = b[len(b) // 2]
+    la = len(a)
+    lb = len(b)
+
+    if la > lb:
+        from scipy.ndimage import zoom
+        a2 = zoom(a, lb / la)
+        a = a2
+    elif la < lb:
+        from scipy.ndimage import zoom
+        b2 = zoom(b, la / lb)
+        b = b2
+
+    la = len(a)
+    lb = len(b)
+
+    ta = int(la // 2)
+    tb = int(lb // 2)
+
+    ca = a[ta]
+    cb = b[tb]
 
     if ca > cb:
         swap = a
