@@ -28,17 +28,28 @@ def do_binarize(image):
     return blackwhite
 
 
-def load_images(src):
+def load_images(src, resize=1):
     images = []
     files = list(glob.glob("%s/*.png" % src))
     files = sorted(files)
     for image_path in files:
         #print(image_path)
         #image = np.asarray(Image.open(image_path).convert('L'))
-        image = np.asarray(Image.open(image_path))
+        img = Image.open(image_path)
+        if resize != 1:
+            img = img.resize((img.width * resize, img.height * resize), Image.BICUBIC)
+        image = np.asarray(img)
         image = do_binarize(image)
         images.append(image)
     return np.asarray(images).astype("float32") / 255.0
+
+
+def cut_image_to_size(image, cut_to=60):
+    x1 = int((image.shape[0] - cut_to) / 2)
+    x2 = x1 + cut_to
+    y1 = int((image.shape[1] - cut_to) / 2)
+    y2 = y1 + cut_to
+    return image[x1:x2, y1:y2]
 
 
 def prepare_dataset(src):
@@ -69,8 +80,8 @@ def do_augmentation2(images, mul=1, data_augmentation=None):
 
     if data_augmentation is None:
         data_augmentation = tf.keras.Sequential([
-            RandomFlip("horizontal_and_vertical"),
-            RandomRotation(0.2),
+            #RandomFlip("horizontal_and_vertical"),
+            RandomRotation(0.4),
         ])
 
     arr = []

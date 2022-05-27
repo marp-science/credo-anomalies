@@ -48,8 +48,8 @@ def set_global_determinism(seed=SEED, fast_n_close=False):
     nn_ops.bias_add = _new_bias_add_1_14  # called from tests
 
 
-def draw_text(text, color=255):
-    img = Image.new("L", (120, 12), 0)
+def draw_text(text, color=255, width=120):
+    img = Image.new("L", (width, 12), 0)
     draw = ImageDraw.Draw(img)
     draw.text((0, 0), text, color)
     return np.array(img)
@@ -222,7 +222,7 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_ha
             color = 255
             if marked_first_half and i_sorted < gt.shape[0]/2:
                 color = 128
-            text = np.expand_dims(draw_text(v, color), axis=-1)
+            text = np.expand_dims(draw_text(v, color, width=decoded.shape[1]*2), axis=-1)
             output = np.vstack([output, text])
 
             # if the outputs array is empty, initialize it as the current
@@ -283,11 +283,11 @@ def prepare_dataset(args, augmentation=False):
     return train_set, validation_set, test_set
 
 
-def original_autoencoder():
+def original_autoencoder(size=60):
     from pyimagesearch.convautoencoder import ConvAutoencoder
     from keras.optimizer_v2.adam import Adam
 
-    (encoder, decoder, autoencoder) = ConvAutoencoder.build(60, 60, 1)
+    (encoder, decoder, autoencoder) = ConvAutoencoder.build(size, size, 1)
     opt = Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
 
     autoencoder.compile(loss="mse", optimizer=opt, metrics=['accuracy'])
