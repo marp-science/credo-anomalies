@@ -283,18 +283,18 @@ def prepare_dataset(args, augmentation=False):
     return train_set, validation_set, test_set
 
 
-def original_autoencoder(size=60):
+def original_autoencoder(size=60, kl=False):
     from pyimagesearch.convautoencoder import ConvAutoencoder
     from keras.optimizer_v2.adam import Adam
 
     (encoder, decoder, autoencoder) = ConvAutoencoder.build(size, size, 1)
     opt = Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
 
-    autoencoder.compile(loss="mse", optimizer=opt, metrics=['accuracy'])
+    autoencoder.compile(loss="mse", optimizer=opt, metrics=['kullback_leibler_divergence' if kl else 'accuracy'])
     return autoencoder
 
 
-def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epochs=EPOCHS, batch_size=BS, shuffle=False, validation_set=None):
+def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epochs=EPOCHS, batch_size=BS, shuffle=False, validation_set=None, kl=False):
     from os.path import exists
     from keras.models import load_model
     import matplotlib.pyplot as plt
@@ -318,7 +318,7 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
     # r = autoencoder.evaluate(validation_set, validation_set)
 
     if fncache is not None:
-        autoencoder.save(fn, save_format="h5")
+        autoencoder.save(fn)
         print('Saved in: %s' % fn)
 
     N = np.arange(0, EPOCHS)
@@ -333,17 +333,30 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
     plt.legend(loc="lower left")
     plt.savefig(fn.replace('.h5', '_loss.png'))
 
-    N = np.arange(0, EPOCHS)
-    plt.style.use("ggplot")
-    plt.figure()
-    plt.plot(N, H.history["accuracy"], label="accuracy")
-    if validation_set is not None:
-        plt.plot(N, H.history["val_accuracy"], label="val_accuracy")
-    plt.title("Training Loss")
-    plt.xlabel("Epoch #")
-    plt.ylabel("Loss")
-    plt.legend(loc="lower left")
-    plt.savefig(fn.replace('.h5', '_accuracy.png'))
+    if kl:
+        N = np.arange(0, EPOCHS)
+        plt.style.use("ggplot")
+        plt.figure()
+        plt.plot(N, H.history["kullback_leibler_divergence"], label="kullback_leibler_divergence")
+        if validation_set is not None:
+            plt.plot(N, H.history["val_kullback_leibler_divergence"], label="val_kullback_leibler_divergence")
+        plt.title("Training Loss")
+        plt.xlabel("Epoch #")
+        plt.ylabel("Loss")
+        plt.legend(loc="lower left")
+        plt.savefig(fn.replace('.h5', '_kullback_leibler_divergence.png'))
+    else:
+        N = np.arange(0, EPOCHS)
+        plt.style.use("ggplot")
+        plt.figure()
+        plt.plot(N, H.history["accuracy"], label="accuracy")
+        if validation_set is not None:
+            plt.plot(N, H.history["val_accuracy"], label="val_accuracy")
+        plt.title("Training Loss")
+        plt.xlabel("Epoch #")
+        plt.ylabel("Loss")
+        plt.legend(loc="lower left")
+        plt.savefig(fn.replace('.h5', '_accuracy.png'))
 
     return autoencoder
 
