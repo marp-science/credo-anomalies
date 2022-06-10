@@ -424,6 +424,8 @@ def dm_func_mean2(image, recon, normalize=True):
     blacks = normalize_indicator(image, normalize)
 
     err = np.mean((image - recon) ** 2) / (blacks ** 2)
+    if err == 0:
+        return 0
     return math.log2(err * 5000)
 
 
