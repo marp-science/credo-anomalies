@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 from PIL import Image
 from PIL import ImageDraw
+from skimage.transform import probabilistic_hough_line
+from scipy.ndimage import rotate
 import imagehash
 
 from settings import *
@@ -285,10 +287,9 @@ def prepare_dataset(args, augmentation=False):
 
 def original_autoencoder(size=60, kl=False):
     from pyimagesearch.convautoencoder import ConvAutoencoder
-    from keras.optimizer_v2.adam import Adam
 
     (encoder, decoder, autoencoder) = ConvAutoencoder.build(size, size, 1)
-    opt = Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
+    opt = tf.keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
 
     autoencoder.compile(loss="mse", optimizer=opt, metrics=['kullback_leibler_divergence' if kl else 'accuracy'])
     return autoencoder
@@ -582,3 +583,37 @@ def confusion_matrix(on):
     ax.set_title("x - data set, y - channel")
     fig.tight_layout()
     plt.show()
+
+
+def angle(x, y):
+    rad = np.arctan2(y, x)
+    degrees = rad*180/np.pi
+    return degrees
+
+
+def round_normalize(image):
+    lines = probabilistic_hough_line(image, threshold=10, line_length=5, line_gap=3)
+    angles = []
+    for l in lines:
+        vector_1 = [l[1][1] - l[0][1], l[1][0] - l[0][0]]
+        #print(vector_1)
+        angles.append(angle(l[1][0] - l[0][0], l[1][1] - l[0][1]))
+    deg = np.average(angles) if len(angles) else 0
+    #print(deg)
+    #print("")
+
+    mask = np.where(image == 0, 0.0, 1.0)
+    rotated_mask = rotate(mask, deg, reshape=False)
+    rotated_image = rotate(image, deg, reshape=False)
+    rotated_image = np.where(rotated_mask < 0.25, 0, rotated_image)
+    rotated_image = np.where(rotated_image < 0, 0, rotated_image)
+    rotated_image = np.where(rotated_image > 1, 1, rotated_image)
+    return rotated_image
+
+
+def normalize_rotation(images):
+    img = []
+    for i in images:
+        img.append(round_normalize(i))
+    ret = np.array(img)
+    return ret
