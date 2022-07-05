@@ -611,9 +611,43 @@ def round_normalize(image):
     return rotated_image
 
 
-def normalize_rotation(images):
+def round_normalize_spread(image, r1=0, r2=180):
+    mask = np.where(image == 0, 0.0, 1.0)
+    min_var = 1000
+    deg = 0
+    for d in range(0, 180):
+        rotated_mask = rotate(mask, d, reshape=False)
+        rotated_image = rotate(image, d, reshape=False)
+        rotated_image = np.where(rotated_mask < 0.25, 0, rotated_image)
+        rotated_image.sort(axis=0)
+        rotated_image.sort(axis=1)
+
+        s = rotated_image.sum(axis=1)
+        v = np.var(s)
+        if v < min_var:
+            min_var = v
+            deg = d
+        #print("%d: %f" % (d, v))
+        #rotated_image.sort(axis=1)
+
+    mask = np.where(image == 0, 0.0, 1.0)
+    deg += 90
+    rotated_mask = rotate(mask, deg, reshape=False)
+    rotated_image = rotate(image, deg, reshape=False)
+    rotated_image = np.where(rotated_mask < 0.25, 0, rotated_image)
+    rotated_image = np.where(rotated_image < 0, 0, rotated_image)
+    rotated_image = np.where(rotated_image > 1, 1, rotated_image)
+    return rotated_image, deg
+
+
+def normalize_rotation(images, method):
     img = []
+    print('Normalize rotation 0 of %d images...' % len(images))
+    c = 0
     for i in images:
-        img.append(round_normalize(i))
+        c += 1
+        img.append(method(i))
+        if c % 100 == 0:
+            print('Normalize rotation %d of %d images...' % (c, len(images)))
     ret = np.array(img)
     return ret
