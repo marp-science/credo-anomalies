@@ -251,7 +251,16 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_ha
     return outputs2, errors
 
 
-def prepare_dataset(args, augmentation=False):
+def tmp_visualize(images):
+    from dataset_loader import prepare_dataset
+    img = prepare_dataset(images)
+    vis, err = visualize_predictions(img, img, lambda x,y:0, False, 16)
+    img_path = 'cache/tmp.png'
+    cv2.imwrite(img_path, vis)
+    display(Image.open(img_path))
+
+
+def prepare_dataset_old(args, augmentation=False):
     if args["kind"] == "mnist":
         from tensorflow.keras.datasets import mnist
         print("[INFO] loading MNIST dataset...")
