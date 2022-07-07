@@ -10,6 +10,8 @@ from PIL import ImageDraw
 from skimage.transform import probabilistic_hough_line
 from scipy.ndimage import rotate
 import imagehash
+from IPython.display import display
+import cv2
 
 from settings import *
 
@@ -202,6 +204,7 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_ha
         mse = dm_func(image, recon)
         errors.append(mse)
     errors_sorted = np.argsort(errors)[::-1]
+    no_img = 0
 
     # loop over our number of output samples
     for y in range(0, samples):
@@ -220,7 +223,8 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_ha
 
             # stack the original and reconstructed image side-by-side
             output = np.hstack([original, recon])
-            v = "" if i >= gt.shape[0] else '      %0.6f' % errors[errors_sorted[i]]
+            v = "" if i >= gt.shape[0] else ' no %3d: %0.6f' % (no_img, errors[errors_sorted[i]])
+            no_img += 1
             color = 255
             if marked_first_half and i_sorted < gt.shape[0]/2:
                 color = 128
@@ -615,12 +619,12 @@ def round_normalize_spread(image, r1=0, r2=180):
     mask = np.where(image == 0, 0.0, 1.0)
     min_var = 1000
     deg = 0
-    for d in range(0, 180):
+    for d in range(r1, r2):
         rotated_mask = rotate(mask, d, reshape=False)
         rotated_image = rotate(image, d, reshape=False)
         rotated_image = np.where(rotated_mask < 0.25, 0, rotated_image)
-        rotated_image.sort(axis=0)
-        rotated_image.sort(axis=1)
+        #rotated_image.sort(axis=0)
+        #rotated_image.sort(axis=1)
 
         s = rotated_image.sum(axis=1)
         v = np.var(s)
