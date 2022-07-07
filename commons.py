@@ -251,10 +251,11 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_ha
     return outputs2, errors
 
 
-def tmp_visualize(images):
+def tmp_visualize(images1, images2):
     from dataset_loader import prepare_dataset
-    img = prepare_dataset(images)
-    vis, err = visualize_predictions(img, img, lambda x,y:0, False, 16)
+    img1 = prepare_dataset(images1)
+    img2 = prepare_dataset(images2)
+    vis, err = visualize_predictions(img1, img2, lambda x,y:0, False, 16)
     img_path = 'cache/tmp.png'
     cv2.imwrite(img_path, vis)
     display(Image.open(img_path))
