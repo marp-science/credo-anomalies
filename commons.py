@@ -204,7 +204,6 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_ha
         mse = dm_func(image, recon)
         errors.append(mse)
     errors_sorted = np.argsort(errors)[::-1]
-    no_img = 0
 
     # loop over our number of output samples
     for y in range(0, samples):
@@ -223,8 +222,7 @@ def visualize_predictions(decoded, images, dm_func=dm_func_mean, marked_first_ha
 
             # stack the original and reconstructed image side-by-side
             output = np.hstack([original, recon])
-            v = "" if i >= gt.shape[0] else ' no %3d: %0.6f' % (no_img, errors[errors_sorted[i]])
-            no_img += 1
+            v = "" if i >= gt.shape[0] else ' no %3d: %0.6f' % (errors_sorted[i], errors[errors_sorted[i]])
             color = 255
             if marked_first_half and i_sorted < gt.shape[0]/2:
                 color = 128
