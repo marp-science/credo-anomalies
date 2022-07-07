@@ -58,6 +58,9 @@ def prepare_dataset(src):
     :param src: tablica ze shape (N, 60, 60) lub (60, 60) gdy to tylko jeden obrazek
     :return: tablica ze shape (N, 60, 60, 1)
     """
+    if isinstance(src, list):
+        src = np.vstack([src])
+
     if len(src.shape) == 4 and src.shape[1] in [60, 64] and src.shape[2] in [60, 64] and src.shape[3] == 1:
         # jest ok
         return src
