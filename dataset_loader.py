@@ -41,7 +41,7 @@ def load_images(src, resize=1):
         image = np.asarray(img)
         image = do_binarize(image)
         images.append(image)
-    return np.asarray(images).astype("float32") / 255.0
+    return np.asarray(images).astype("float32") / 255.0, files
 
 
 def cut_image_to_size(image, cut_to=60):
@@ -97,7 +97,7 @@ def do_augmentation2(images, mul=1, data_augmentation=None):
 
 
 def prepare_data(src, augmentation=1):
-    images = load_images(src)
+    images = load_images(src)[0]
     expanded = do_augmentation2(images, augmentation)
     return expanded
 
@@ -130,7 +130,7 @@ def load_dataset_with_augmentation(source_dir, augmentation=None, min_count=None
     :param min_count: minimalna liczba próbek po augmentacji.
     :return: (dane, augmentowane_dane)
     """
-    images = load_images(source_dir)
+    images = load_images(source_dir)[0]
     if augmentation is not None:
         expanded = do_augmentation2(images, augmentation)
     elif min_count is not None:
@@ -166,10 +166,10 @@ def load_from_file(fn):
 
 
 def load_dataset():
-    x_spots = load_images("hit-images-final/hits_votes_4_Dots")
-    x_tracks = load_images("hit-images-final/hits_votes_4_Lines")
-    x_worms = load_images("hit-images-final/hits_votes_4_Worms")
-    x_artifacts = load_images("hit-images-final/artefacts")
+    x_spots = load_images("hit-images-final/hits_votes_4_Dots")[0]
+    x_tracks = load_images("hit-images-final/hits_votes_4_Lines")[0]
+    x_worms = load_images("hit-images-final/hits_votes_4_Worms")[0]
+    x_artifacts = load_images("hit-images-final/artefacts")[0]
 
     x_all = np.vstack([x_spots, x_tracks, x_worms, x_artifacts])
 

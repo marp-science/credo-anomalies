@@ -91,5 +91,9 @@ class ConvAutoencoder:
 		# our autoencoder is the encoder + decoder
 		autoencoder = Model(inputs, decoder(encoder(inputs)), name="autoencoder")
 
+		encoder.summary()
+		decoder.summary()
+		autoencoder.summary()
+
 		# return a 3-tuple of the encoder, decoder, and autoencoder
 		return (encoder, decoder, autoencoder)

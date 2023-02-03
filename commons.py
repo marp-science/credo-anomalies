@@ -12,6 +12,8 @@ from scipy.ndimage import rotate
 import imagehash
 from IPython.display import display
 import cv2
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
 
 from settings import *
 
@@ -334,6 +336,18 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
         autoencoder.save(fn)
         print('Saved in: %s' % fn)
 
+        encoder = Model(autoencoder.input, autoencoder.layers[-2].output)
+        encoder.summary()
+        opt = tf.keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
+        encoder.compile(loss="mse", optimizer=opt, metrics=['accuracy'])
+        encoder.save(fn.replace('.h5', '-encoder.h5'))
+
+        decoder_input = Input(shape=(16,))
+        decoder = Model(decoder_input, autoencoder.layers[-1](decoder_input))
+        decoder.summary()
+        decoder.compile(loss="mse", optimizer=opt, metrics=['accuracy'])
+        decoder.save(fn.replace('.h5', '-decoder.h5'))
+
     N = np.arange(0, EPOCHS)
     plt.style.use("ggplot")
     plt.figure()
@@ -461,6 +475,60 @@ def calc_similarity(autoencoder, dots_set, tracks_set, worms_set, artifacts_set,
         'tracks': prepare_for_histogram(tracks_set, tracks_reconstruction, dm_func, **argv),
         'artifacts': prepare_for_histogram(artifacts_set, artifacts_reconstruction, dm_func, **argv)
     }
+
+
+def calc_encoded(encoder, dots_set, tracks_set, worms_set, artifacts_set):
+
+    #autoencoder.summary()
+
+    #decoder_input = Input(shape=(16,))
+    #decoder = Model(decoder_input, autoencoder.layers[-1](decoder_input))
+    #decoder.summary()
+
+    #ai = autoencoder.input
+    #ao = autoencoder.layers[-2].output
+    #encoder = Model(ai, ao)
+    encoder.summary()
+
+    dots_encoded = encoder.predict(dots_set)
+    worms_encoded = encoder.predict(worms_set)
+    tracks_encoded = encoder.predict(tracks_set)
+    artifacts_encoded = encoder.predict(artifacts_set)
+
+    return {
+        'dots': dots_encoded,
+        'worms': worms_encoded,
+        'tracks': tracks_encoded,
+        'artifacts': artifacts_encoded
+    }
+
+
+def save_encoded_channel(fn, channel, files):
+    from numpy import savetxt
+    #f = np.asarray(files)
+    #f = np.expand_dims(f, axis=1)
+    #data = np.hstack([f, channel])
+    #savetxt(fn, [[f, channel]], delimiter='\t', fmt=['%s', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e', '%.18e'])
+    with open(fn + '.txt', 'w') as f:
+        for i in range(0, len(files)):
+            #f.write(files[i].split('\\')[-1])
+            f.write(files[i])
+            #for a in channel[i]:
+                #f.write('\t%.18e' % a)
+            f.write('\n')
+    np.save(fn + '.npy', channel)
+
+
+def save_encoded(encoded, prefix, dots_files, tracks_files, worms_files, artifacts_files):
+    #save_encoded_channel(prefix + 'dots', encoded['dots'], dots_files)
+    #save_encoded_channel(prefix + 'worms', encoded['worms'], worms_files)
+    #save_encoded_channel(prefix + 'tracks', encoded['tracks'], tracks_files)
+    #save_encoded_channel(prefix + 'artifacts', encoded['artifacts'], artifacts_files)
+    #files = [*dots_files, *tracks_files, *worms_files, *artifacts_files]
+    #channel = np.vstack([encoded['dots'], encoded['worms'], encoded['tracks'], encoded['artifacts']])
+    files = [*tracks_files, *worms_files]
+    channel = np.vstack([encoded['worms'], encoded['tracks']])
+    save_encoded_channel(prefix, channel, files)
 
 
 def append_label_column(v, c):
