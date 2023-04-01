@@ -299,17 +299,17 @@ def prepare_dataset_old(args, augmentation=False):
     return train_set, validation_set, test_set
 
 
-def original_autoencoder(size=60, kl=False):
+def original_autoencoder(size=60, kl=False, latentDim=16):
     from pyimagesearch.convautoencoder import ConvAutoencoder
 
-    (encoder, decoder, autoencoder) = ConvAutoencoder.build(size, size, 1)
+    (encoder, decoder, autoencoder) = ConvAutoencoder.build(size, size, 1, latentDim=latentDim)
     opt = tf.keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
 
     autoencoder.compile(loss="mse", optimizer=opt, metrics=['kullback_leibler_divergence' if kl else 'accuracy'])
     return autoencoder
 
 
-def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epochs=EPOCHS, batch_size=BS, shuffle=False, validation_set=None, kl=False):
+def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epochs=EPOCHS, batch_size=BS, shuffle=False, validation_set=None, kl=False, latentDim=16):
     from os.path import exists
     from keras.models import load_model
     import matplotlib.pyplot as plt
@@ -342,7 +342,7 @@ def train_or_cache(train_set, autoencoder, fncache=None, force_train=False, epoc
         encoder.compile(loss="mse", optimizer=opt, metrics=['accuracy'])
         encoder.save(fn.replace('.h5', '-encoder.h5'))
 
-        decoder_input = Input(shape=(16,))
+        decoder_input = Input(shape=(latentDim,))
         decoder = Model(decoder_input, autoencoder.layers[-1](decoder_input))
         decoder.summary()
         decoder.compile(loss="mse", optimizer=opt, metrics=['accuracy'])
