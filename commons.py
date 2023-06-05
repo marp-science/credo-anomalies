@@ -301,8 +301,9 @@ def prepare_dataset_old(args, augmentation=False):
 
 def original_autoencoder(size=60, kl=False, latentDim=16):
     from pyimagesearch.convautoencoder import ConvAutoencoder
-
+    print('Przed ConvAE')
     (encoder, decoder, autoencoder) = ConvAutoencoder.build(size, size, 1, latentDim=latentDim)
+    print('Po ConvAE')
     # opt = tf.keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
     # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=INIT_LR, decay_steps=(INIT_LR / EPOCHS), decay_rate=0.9)
     # opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
