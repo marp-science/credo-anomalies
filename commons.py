@@ -303,9 +303,10 @@ def original_autoencoder(size=60, kl=False, latentDim=16):
     from pyimagesearch.convautoencoder import ConvAutoencoder
 
     (encoder, decoder, autoencoder) = ConvAutoencoder.build(size, size, 1, latentDim=latentDim)
-    #     opt = tf.keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
-    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=INIT_LR, decay_steps=(INIT_LR / EPOCHS), decay_rate=0.9)
-    opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+    # opt = tf.keras.optimizers.Adam(learning_rate=INIT_LR, decay=INIT_LR / EPOCHS)
+    # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=INIT_LR, decay_steps=(INIT_LR / EPOCHS), decay_rate=0.9)
+    # opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+    opt = tf.keras.optimizers.Adam(learning_rate=INIT_LR)
     
     autoencoder.compile(loss="mse", optimizer=opt, metrics=['kullback_leibler_divergence' if kl else 'accuracy'])
     return autoencoder
