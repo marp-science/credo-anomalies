@@ -1,7 +1,6 @@
 # credo-anomalies
 
-The code directly forked from https://github.com/dzwiedziu-nkg/credo-anomalies
-Adapting to run on Google Colab without extra effort
+The code directly forked from https://github.com/dzwiedziu-nkg/credo-anomalies and adapted to run on Google Colab without extra effort.
 
 Insert the following code in the first cell of the Python Notebook:
 
